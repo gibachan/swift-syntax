@@ -226,10 +226,25 @@ extension Parser {
     }
 
     let version: RawVersionTupleSyntax?
-    if self.at(.integerLiteral, .floatingLiteral) {
+    let unexpectedAfterVersion: RawUnexpectedNodesSyntax?
+    if self.at(.integerLiteral) {
       version = self.parseVersionTuple(maxComponentCount: 3)
+      unexpectedAfterVersion = nil
+    } else if self.at(.floatingLiteral) {
+      if self.currentToken.tokenText.firstIndex(of: UInt8(ascii: ".")) == nil {
+        version = nil
+        if let node = self.consume(if: .floatingLiteral) {
+          unexpectedAfterVersion = RawUnexpectedNodesSyntax([node], arena: self.arena)
+        } else {
+          unexpectedAfterVersion = nil
+        }
+      } else {
+        version = self.parseVersionTuple(maxComponentCount: 3)
+        unexpectedAfterVersion = nil
+      }
     } else {
       version = nil
+      unexpectedAfterVersion = nil
     }
 
     return RawAvailabilityVersionRestrictionSyntax(
@@ -237,6 +252,7 @@ extension Parser {
       platform: platform,
       unexpectedComparison,
       version: version,
+      unexpectedAfterVersion,
       arena: self.arena
     )
   }
@@ -262,40 +278,48 @@ extension Parser {
   ///     version-list -> version-tuple-element version-list?
   ///     version-tuple-element -> '.' interger-literal
   mutating func parseVersionTuple(maxComponentCount: Int) -> RawVersionTupleSyntax {
-    if self.at(.floatingLiteral),
-      let periodIndex = self.currentToken.tokenText.firstIndex(of: UInt8(ascii: ".")),
-      self.currentToken.tokenText[0..<periodIndex].allSatisfy({ Unicode.Scalar($0).isDigit })
-    {
-      // The lexer generates a float literal '1.2' for the major and minor version.
-      // Split it into two integers if possible
-      let major = self.consumePrefix(SyntaxText(rebasing: self.currentToken.tokenText[0..<periodIndex]), as: .integerLiteral)
+    if self.at(.floatingLiteral) {
 
-      var components: [RawVersionComponentSyntax] = []
-      var trailingComponents: [RawVersionComponentSyntax] = []
 
-      for i in 1... {
-        guard let period = self.consume(if: .period) else {
-          break
+      if let periodIndex = self.currentToken.tokenText.firstIndex(of: UInt8(ascii: ".")),
+         self.currentToken.tokenText[0..<periodIndex].allSatisfy({ Unicode.Scalar($0).isDigit })
+      {
+        // The lexer generates a float literal '1.2' for the major and minor version.
+        // Split it into two integers if possible
+        let major = self.consumePrefix(SyntaxText(rebasing: self.currentToken.tokenText[0..<periodIndex]), as: .integerLiteral)
+
+        var components: [RawVersionComponentSyntax] = []
+        var trailingComponents: [RawVersionComponentSyntax] = []
+
+        for i in 1... {
+          guard let period = self.consume(if: .period) else {
+            break
+          }
+          let version = self.expectDecimalIntegerWithoutRecovery()
+
+          let versionComponent = RawVersionComponentSyntax(period: period, number: version, arena: self.arena)
+
+          if i < maxComponentCount {
+            components.append(versionComponent)
+          } else {
+            trailingComponents.append(versionComponent)
+          }
         }
-        let version = self.expectDecimalIntegerWithoutRecovery()
 
-        let versionComponent = RawVersionComponentSyntax(period: period, number: version, arena: self.arena)
+        var unexpectedTrailingComponents: RawUnexpectedNodesSyntax?
 
-        if i < maxComponentCount {
-          components.append(versionComponent)
-        } else {
-          trailingComponents.append(versionComponent)
+        if !trailingComponents.isEmpty {
+          unexpectedTrailingComponents = RawUnexpectedNodesSyntax(elements: trailingComponents.compactMap { $0.as(RawSyntax.self) }, arena: self.arena)
         }
+
+        return RawVersionTupleSyntax(major: major, components: RawVersionComponentListSyntax(elements: components, arena: self.arena), unexpectedTrailingComponents, arena: self.arena)
+      } else {
+        // Invalid Floating version
+        let float = self.consume(if: .floatingLiteral)!
+        let unexpected = RawUnexpectedNodesSyntax([float], arena: self.arena)
+        print(unexpected)
+        return RawVersionTupleSyntax(major: .init(missing: .integerLiteral, arena: self.arena), components: nil, unexpected, arena: self.arena)
       }
-
-      var unexpectedTrailingComponents: RawUnexpectedNodesSyntax?
-
-      if !trailingComponents.isEmpty {
-        unexpectedTrailingComponents = RawUnexpectedNodesSyntax(elements: trailingComponents.compactMap { $0.as(RawSyntax.self) }, arena: self.arena)
-      }
-
-      return RawVersionTupleSyntax(major: major, components: RawVersionComponentListSyntax(elements: components, arena: self.arena), unexpectedTrailingComponents, arena: self.arena)
-
     } else {
       let major = self.expectDecimalIntegerWithoutRecovery()
       return RawVersionTupleSyntax(major: major, components: nil, arena: self.arena)

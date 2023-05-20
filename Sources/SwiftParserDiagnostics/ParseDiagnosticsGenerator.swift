@@ -528,6 +528,17 @@ public class ParseDiagnosticsGenerator: SyntaxAnyVisitor {
         handledNodes: [unexpected.id]
       )
     }
+
+    if let version = node.version,
+       version.major.presence == .missing,
+       let unexpectedAfterComponents = version.unexpectedAfterComponents {
+      addDiagnostic(
+        version,
+        CannotParseVersionTuple(versionTuple: unexpectedAfterComponents),
+        handledNodes: [version.id]
+      )
+    }
+
     return .visitChildren
   }
 

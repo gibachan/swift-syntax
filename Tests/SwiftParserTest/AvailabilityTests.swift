@@ -148,13 +148,8 @@ final class AvailabilityTests: XCTestCase {
       func test() {}
       """,
       diagnostics: [
-        DiagnosticSpec(message: "expected version tuple in version restriction", fixIts: ["insert version tuple"]),
-        DiagnosticSpec(message: "unexpected code '10e10' in attribute"),
-      ],
-      fixedSource: """
-        @available(OSX <#integer literal#>10e10)
-        func test() {}
-        """
+        DiagnosticSpec(message: "unexpected code '10e10' in version restriction"),
+      ]
     )
 
     assertParse(
