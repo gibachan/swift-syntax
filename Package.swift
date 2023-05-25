@@ -60,6 +60,10 @@ let package = Package(
   ],
   targets: [
     // MARK: - Internal helper targets
+    .executableTarget(
+      name: "Demo",
+      dependencies: ["SwiftBasicFormat", "SwiftSyntax", "SwiftParser", "SwiftParserDiagnostics", "SwiftOperators", "SwiftSyntaxBuilder"]
+    ),
 
     .target(
       name: "_InstructionCounter"

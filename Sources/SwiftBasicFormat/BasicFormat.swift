@@ -389,6 +389,11 @@ open class BasicFormat: SyntaxRewriter {
   // MARK: - Formatting a token
 
   open override func visit(_ token: TokenSyntax) -> TokenSyntax {
+    // token=identifier("someClosure"), currentIndentationLevel=spaces(4) が怪しい...
+
+    if token.debugDescription == "rightBrace" {
+      print("HIT")
+    }
     defer {
       self.previousToken = token
     }
@@ -546,6 +551,8 @@ open class BasicFormat: SyntaxRewriter {
       trailingTrivia += .space
     }
 
+    // ここで leadingTriviaIndentation=spaces(4)
+    print("## token=\(token.debugDescription), currentIndentationLevel=\(self.currentIndentationLevel.debugDescription)")
     var leadingTriviaIndentation = self.currentIndentationLevel
     var trailingTriviaIndentation = self.currentIndentationLevel
 
@@ -565,6 +572,7 @@ open class BasicFormat: SyntaxRewriter {
       trailingTriviaIndentation = anchorPointIndentation
     }
 
+    // ここでインデントが発生
     leadingTrivia = leadingTrivia.indented(indentation: leadingTriviaIndentation, isOnNewline: previousTokenIsStringLiteralEndingInNewline)
     trailingTrivia = trailingTrivia.indented(indentation: trailingTriviaIndentation, isOnNewline: false)
 
