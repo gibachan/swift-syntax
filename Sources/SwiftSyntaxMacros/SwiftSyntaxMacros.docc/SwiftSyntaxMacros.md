@@ -22,7 +22,7 @@ Use `swift-parser-cli` to test out your macros and see what kind of syntactic tr
 
 ## Example macros
 
-A number of example macros have been implemented in the file `MacroSytem+Examples.swift`. They include:
+A number of example macros have been implemented in the file `MacroSystem+Examples.swift`. They include:
 
 * `#line`: Implements the `#line` expression.
 * `#column`: Implements the `#column` expression.

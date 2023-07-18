@@ -35,7 +35,7 @@ child nodes. The base kind of a syntax node defines the class of syntax the node
 All nodes are at least of the `Syntax`
 kind, though some nodes may have a more specific kind like `Stmt` for
 statements or `Expr` for expressions. The SwiftSyntax library expands these
-kinds into protocol conformances and allows for casting strongly typed syntax
+kinds into protocol conformance and allows for casting strongly typed syntax
 nodes among these categories for easier processing.
 
 The node for a source file is reproduced below:
