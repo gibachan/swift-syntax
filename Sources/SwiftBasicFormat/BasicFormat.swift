@@ -98,6 +98,7 @@ open class BasicFormat: SyntaxRewriter {
       stringLiteralNestingLevel += 1
     }
     if requiresIndent(node) {
+      print("## requiresIndent=true for kind=\(node.kind)")
       if let firstToken = node.firstToken(viewMode: viewMode),
         let tokenIndentation = firstToken.leadingTrivia.indentation(isOnNewline: false),
         !tokenIndentation.isEmpty,
@@ -202,7 +203,7 @@ open class BasicFormat: SyntaxRewriter {
     case \EnumCaseParameterClauseSyntax.parameters:
       return true
     case \FunctionCallExprSyntax.arguments:
-      return true
+      return true // ここで trueとなるのが問題
     case \FunctionTypeSyntax.parameters:
       return true
     case \MemberDeclBlockSyntax.members:
@@ -389,10 +390,14 @@ open class BasicFormat: SyntaxRewriter {
   // MARK: - Formatting a token
 
   open override func visit(_ token: TokenSyntax) -> TokenSyntax {
+    print("## start=`\(token.detached.text)`, leading=\(token.leadingTrivia.debugDescription), trailing=\(token.trailingTrivia.debugDescription)")
     // token=identifier("someClosure"), currentIndentationLevel=spaces(4) が怪しい...
 
     if token.debugDescription == "rightBrace" {
       print("HIT")
+//    } else if token.debugDescription == "leftBrace" {
+//      print("HIT2")
+//      // ここでspaces(4)がおかしそう
     }
     defer {
       self.previousToken = token
@@ -572,7 +577,7 @@ open class BasicFormat: SyntaxRewriter {
       trailingTriviaIndentation = anchorPointIndentation
     }
 
-    // ここでインデントが発生
+    // !!! ここで rightBrace に対して leadingTriviaにインデントが発生
     leadingTrivia = leadingTrivia.indented(indentation: leadingTriviaIndentation, isOnNewline: previousTokenIsStringLiteralEndingInNewline)
     trailingTrivia = trailingTrivia.indented(indentation: trailingTriviaIndentation, isOnNewline: false)
 
@@ -593,6 +598,8 @@ open class BasicFormat: SyntaxRewriter {
     if let transformedTokenPresence {
       result = result.with(\.presence, transformedTokenPresence)
     }
+    print("## result=`\(result.text)`, leading=\(result.leadingTrivia.debugDescription), trailing=\(result.trailingTrivia.debugDescription)")
+
     return result
   }
 }

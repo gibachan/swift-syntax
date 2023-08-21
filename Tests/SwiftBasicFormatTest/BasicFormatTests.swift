@@ -504,4 +504,13 @@ final class BasicFormatTest: XCTestCase {
       )
     }
   }
+
+  func testClosureParameter() {
+    let source = """
+      myFunc({
+          return true
+      })
+      """
+    assertFormatted(source: source, expected: source)
+  }
 }
