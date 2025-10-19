@@ -62,6 +62,23 @@ extension Trivia {
     } else {
       return nil
     }
+
+    // isOnNewline = false
+
+    // fail
+    // self = newlines(1) & spaces(4)
+    // lastNonWhitespaceTriviaPieceIndex = 2
+    // piecesBeforeLastNonWhitespace = newlines : 1 & spaces : 4
+    // lastNewlineIndex = 0
+    // indentation = spaces(4)
+
+    // success
+    // self = newlines : 1
+    // lastNonWhitespaceTriviaPieceIndex = 1
+    // piecesBeforeLastNonWhitespace = newlines : 1
+    // lastNewlineIndex = 0
+    // indentation = []
+
     return Trivia(pieces: indentation)
   }
 

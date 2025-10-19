@@ -440,6 +440,16 @@ open class BasicFormat: SyntaxRewriter {
   // MARK: - Formatting a token
 
   open override func visit(_ token: TokenSyntax) -> TokenSyntax {
+    print("## token=\(token), kind=\(token.tokenKind)")
+    if token.tokenKind == .keyword(.return) {
+      print("HIT")
+    }
+    if token.tokenKind == .stringQuote {
+      print("HIT")
+    }
+    if token.tokenKind == .leftBrace {
+      print("HIT")
+    }
     defer {
       self.previousToken = token
     }
@@ -476,6 +486,11 @@ open class BasicFormat: SyntaxRewriter {
       }
       return previousToken.isStringSegmentWithLastCharacterBeingNewline
     }()
+
+    print("## previousTokenWillEndWithNewline=\(previousTokenWillEndWithNewline)")
+    if token.tokenKind == .keyword(.return) {
+//      previousTokenWillEndWithNewline = true
+    }
 
     let previousTokenIsStringLiteralEndingInNewline: Bool = {
       guard let previousToken = previousToken else {
@@ -569,6 +584,15 @@ open class BasicFormat: SyntaxRewriter {
       }
     }
 
+    // fail
+    // isInitialToken = false
+    // previousTokenWillEndWithNewline = false
+    // token.isStringSegment = false
+    // leadingTrivia.indentation(isOnNewline: isInitialToken || previousTokenWillEndWithNewline) = spaces 4
+
+    // success
+    // leadingTrivia.indentation(isOnNewline: isInitialToken || previousTokenWillEndWithNewline) = []
+
     if leadingTrivia.indentation(isOnNewline: isInitialToken || previousTokenWillEndWithNewline) == []
       && !token.isStringSegment
     {
@@ -578,7 +602,27 @@ open class BasicFormat: SyntaxRewriter {
       // indent individual lines of a multi-line string literals without breaking
       // their integrity.
       anchorPoints[token] = currentIndentationLevel
+      // anchorPoints[token] = spaces : 4 on testLabel5
+      print("## anchorPoints[token] = currentIndentationLevel(\(currentIndentationLevel)")
+    } else {
+      print("#### leadingTrivia.indentation(isOnNewline: isInitialToken || previousTokenWillEndWithNewline) = \(leadingTrivia.indentation(isOnNewline: isInitialToken || previousTokenWillEndWithNewline))")
+      print("#### token.isStringSegment = \(token.isStringSegment)")
+      print("HIT")
     }
+
+    print("### inferInitialTokenIndentation=\(inferInitialTokenIndentation)")
+    print("### isInitialToken=\(isInitialToken)")
+    print("### token.presence == .present=\(token.presence == .present)")
+
+    // fail
+//    ### inferInitialTokenIndentation=true
+//    ### isInitialToken=false
+//    ### token.presence == .present=true
+
+    // success
+//    ### inferInitialTokenIndentation=true
+//    ### isInitialToken=false
+//    ### token.presence == .present=true
 
     if inferInitialTokenIndentation
       && isInitialToken
@@ -589,6 +633,11 @@ open class BasicFormat: SyntaxRewriter {
         leadingTrivia += indentationOfLine
       }
     }
+
+    print("### nextTokenWillStartWithWhitespace=\(nextTokenWillStartWithWhitespace)")
+
+    // fail
+    // ### nextTokenWillStartWithWhitespace=true
 
     // Add a trailing space to the token unless
     //  - it already ends with a whitespace or
@@ -621,6 +670,20 @@ open class BasicFormat: SyntaxRewriter {
       trailingTriviaIndentation = currentIndentationLevel
     }
 
+    // fali
+    // before leadingTrivia = [newlines(1), spaces(4)]
+    // * leadingTriviaIndentation = []
+    // previousTokenIsStringLiteralEndingInNewline = false
+    // previousTokenWillEndWithNewline = false
+    // after leadingTrivia = [newlines(1), spaces(4)]
+
+    // success
+    // before leadingTrivia = [newlines(1)]
+    // leadingTriviaIndentation = [spaces(4)]
+    // previousTokenIsStringLiteralEndingInNewline = false
+    // previousTokenWillEndWithNewline = false
+    // after leadingTrivia = [newlines(1), spaces(4)]
+
     leadingTrivia = leadingTrivia.indented(
       indentation: leadingTriviaIndentation,
       isOnNewline: previousTokenIsStringLiteralEndingInNewline || previousTokenWillEndWithNewline
@@ -642,6 +705,9 @@ open class BasicFormat: SyntaxRewriter {
       isBeforeNewline: nextTokenWillStartWithNewline
     )
 
+    print("## leadingTrivia=\(leadingTrivia.count)")
+    print("## trailingTrivia=\(trailingTrivia.count)")
+
     var result = token.detached
     if leadingTrivia != result.leadingTrivia {
       result = result.with(\.leadingTrivia, leadingTrivia)
@@ -656,6 +722,8 @@ open class BasicFormat: SyntaxRewriter {
     if let transformedTokenPresence {
       result = result.with(\.presence, transformedTokenPresence)
     }
+
+    print("##### token='\(token)', token.tokenKind=\(token.tokenKind), result='\(result)', result.leadingTrivia=\(result.leadingTrivia.debugDescription), result.trailingTrivia=\(result.trailingTrivia.debugDescription)")
     return result
   }
 }
@@ -675,6 +743,18 @@ fileprivate extension TokenSyntax {
       return segment.last?.isNewline ?? false
     default:
       return false
+    }
+  }
+}
+
+extension Trivia {
+  func onlyContainsSpaces() -> Bool {
+    self.allSatisfy { elem in
+      if case .spaces = elem {
+        return true
+      } else {
+        return false
+      }
     }
   }
 }

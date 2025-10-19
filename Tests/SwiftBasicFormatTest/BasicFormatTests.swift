@@ -53,6 +53,108 @@ private func assertFormattingRoundTrips(
 }
 
 final class BasicFormatTest: XCTestCase {
+  // https://github.com/swiftlang/swift-syntax/issues/2084
+  func testLabel() {
+    assertFormatted(
+      source: """
+        .init(
+            name: {
+            if let name {
+                return name
+            } else {
+                return "John"
+            }
+            }()
+        )
+        """,
+      expected: """
+        .init(
+            name: {
+                if let name {
+                    return name
+                } else {
+                    return "John"
+                }
+            }()
+        )
+        """
+    )
+  }
+  func testLabel2() {
+    assertFormatted(
+      source: """
+        .init(
+            name: {
+            return "John"
+            }()
+        )
+        """,
+      expected: """
+        .init(
+            name: {
+                return "John"
+            }()
+        )
+        """
+    )
+  }
+  func testLabel3() { // fail
+    assertFormatted(
+      source: """
+            {
+            "John"
+            }
+        """,
+      expected: """
+            {
+                "John"
+            }
+        """
+    )
+  }
+//  func testLabel33333() { // fail from testIndentedStandaloneClosureRoundTrips
+//    assertFormatted(
+//      source: """
+//          foo {
+//          "abc"
+//          }
+//        """,
+//      expected: """
+//          foo {
+//              "abc"
+//          }
+//        """
+//    )
+//  }
+  func testLabel5() { // pass
+    assertFormatted(
+      source: """
+        {
+        "John"
+        }
+        """,
+      expected: """
+        {
+            "John"
+        }
+        """
+    )
+  }
+  func testLabel4() {
+    assertFormatted(
+      source: """
+        {
+        2
+        }
+        """,
+      expected: """
+        {
+            2
+        }
+        """
+    )
+  }
+
   func testNotIndented() {
     assertFormatted(
       source: """
